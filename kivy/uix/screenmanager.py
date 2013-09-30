@@ -42,12 +42,12 @@ a screen, you absolutely need to give a name to it::
 
 From 1.8.0, you can now switch dynamically to a new screen, change the
 transition options, and remove the previous one, using
-:meth:`ScreenManager.switch_to`::
+:meth:`ScreenManager.replace_current_with`::
 
     sm = ScreenManager()
     screens = [Screen(name='Title {}'.format(i)) for i in range(4)]
 
-    sm.switch_to(screens[0])
+    sm.replace_current_with(screens[0])
     # later
 
     # default :data:`ScreenManager.transition` is a :class:`SlideTransition`.
@@ -768,9 +768,9 @@ class ScreenManager(FloatLayout):
         except ValueError:
             return
 
-    def switch_to(self, screen, **options):
+    def replace_current_with(self, screen, **options):
         '''Add a new screen in the ScreenManager, and switch to it. The previous
-        screen will be removed from the children. `options` are the
+        screen will be removed from the ScreenManager. `options` are the
         :data:`transition` options that will be changed before the animation
         happens.
 
@@ -778,11 +778,11 @@ class ScreenManager(FloatLayout):
         one::
 
             sm = ScreenManager()
-            sm.switch_to(screen1)
+            sm.replace_current_with(screen1)
             # later
-            sm.switch_to(screen2, direction='left')
+            sm.replace_current_with(screen2, direction='left')
             # later
-            sm.switch_to(screen3, direction='right', duration=1.)
+            sm.replace_current_with(screen3, direction='right', duration=1.)
 
         If any animation is in progress, it will be stopped and replaced by
         this one: you should avoid it, because the animation will just look
@@ -806,13 +806,13 @@ class ScreenManager(FloatLayout):
         if screen not in self.children:
             if self.has_screen(screen.name):
                 screen.name = self._generate_screen_name()
+            self.add_widget(screen)
 
         # change the transition options
         for key, value in iteritems(options):
             setattr(self.transition, key, value)
 
         # add and leave if we are set as the current screen
-        self.add_widget(screen)
         if self.current_screen is screen:
             return
 
