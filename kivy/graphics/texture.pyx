@@ -1105,6 +1105,23 @@ cdef class TextureRegion(Texture):
         self._uvh = (height / <float>origin._height) * origin._uvh
         self.update_tex_coords()
 
+    def blit_buffer(self, pbuffer, size=None, colorfmt=None, pos=None,
+                    bufferfmt=None, mipmap_level=0, mipmap_generation=True):
+        '''Operates exactly like :meth:`Texture.blit_buffer` by passing the
+        method call straight to `self.owner`, except that the blitted
+        region is shifted by `self.x` and `self.y`.
+
+        '''
+
+        real_pos = (pos[0] + self.x, pos[1] + self.y)
+        return super(TextureRegion, self).blit_buffer(pbuffer,
+                                                      size=size,
+                                                      colorfmt=colorfmt,
+                                                      pos=pos,
+                                                      bufferfmt=bufferfmt,
+                                                      mipmap_level=mipmap_level,
+                                                      mipmap_generation=mipmap_generation)
+
     def __repr__(self):
         return '<TextureRegion of %r hash=%r id=%d size=%r colorfmt=%r bufferfmt=%r source=%r observers=%d>' % (
             self.owner, id(self), self._id, self.size, self.colorfmt,
