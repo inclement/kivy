@@ -1112,8 +1112,9 @@ cdef class TextureRegion(Texture):
         region is shifted by `self.x` and `self.y`.
 
         '''
-
-        real_pos = (pos[0] + self.x, pos[1] + self.y)
+        if pos is None:
+            pos = (0, 0)
+        pos = (pos[0] + self.x, pos[1] + self.y)
         return super(TextureRegion, self).blit_buffer(pbuffer,
                                                       size=size,
                                                       colorfmt=colorfmt,
