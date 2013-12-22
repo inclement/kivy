@@ -59,6 +59,8 @@ cdef class Line(VertexInstruction):
             next one, default 0, changing this makes it dashed.
         `width`: float
             Width of the line, default 1.0
+        `alpha_blend`: float
+            See :data:`alpha_blend` for more information.
         `cap`: str, defaults to 'round'
             See :data:`cap` for more information.
         `joint`: str, defaults to 'round'
@@ -101,6 +103,7 @@ cdef class Line(VertexInstruction):
     cdef int _joint
     cdef list _points
     cdef float _width
+    cdef float _alpha_blend
     cdef int _dash_offset, _dash_length
     cdef int _use_stencil
     cdef int _close
@@ -121,6 +124,7 @@ cdef class Line(VertexInstruction):
         self._dash_length = kwargs.get('dash_length') or 1
         self._dash_offset = kwargs.get('dash_offset') or 0
         self._width = kwargs.get('width') or 1.0
+        self._alpha_blend = kwargs.get('alpha_blend') or 0.0
         self.joint = kwargs.get('joint') or 'round'
         self.cap = kwargs.get('cap') or 'round'
         self._cap_precision = kwargs.get('cap_precision') or 10
@@ -266,6 +270,7 @@ cdef class Line(VertexInstruction):
         cdef int cap
         cdef char *buf = NULL
         cdef Texture texture = self.texture
+        cdef float alpha_blend = self._alpha_blend
 
         self._bxmin = 999999999
         self._bymin = 999999999
@@ -283,8 +288,15 @@ cdef class Line(VertexInstruction):
             cap = LINE_CAP_NONE
 
         self.batch.set_mode('triangles')
-        cdef unsigned long vertices_count = (count - 1) * 4
-        cdef unsigned long indices_count = (count - 1) * 6
+        cdef unsigned long vertices_count
+        cdef unsigned long indices_count
+        if self._alpha_blend > 0.:
+            vertices_count = (count-1) * 8
+            indices_count = (count-1) * 18
+        else:
+            vertices_count = (count-1) * 4
+            indices_count = (count-1) * 6
+
         cdef unsigned int iv = 0, ii = 0
 
         if self._joint == LINE_JOINT_BEVEL:
@@ -384,7 +396,23 @@ cdef class Line(VertexInstruction):
             indices[ii + 3] = iv
             indices[ii + 4] = iv + 2
             indices[ii + 5] = iv + 3
-            ii += 6
+            if alpha_blend == 0.0:
+                ii += 6
+            else:
+                indices[ii + 6] = iv
+                indices[ii + 7] = iv + 4
+                indices[ii + 8] = iv + 5
+                indices[ii + 9] = iv 
+                indices[ii + 10] = iv + 5
+                indices[ii + 11] = iv + 1
+
+                indices[ii + 12] = iv + 3
+                indices[ii + 13] = iv + 6
+                indices[ii + 14] = iv + 7
+                indices[ii + 15] = iv + 3
+                indices[ii + 16] = iv + 7
+                indices[ii + 17] = iv + 2
+                ii += 18
 
             vertices[iv].x = x1
             vertices[iv].y = y1
@@ -406,6 +434,28 @@ cdef class Line(VertexInstruction):
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
             iv += 1
+
+            if alpha_blend > 0.0:
+                vertices[iv].x = x1 + cos(a1) * alpha_blend
+                vertices[iv].y = y1 + sin(a1) * alpha_blend
+                vertices[iv].s0 = 0
+                vertices[iv].t0 = 0
+                iv += 1
+                vertices[iv].x = x2 + cos(a1) * alpha_blend
+                vertices[iv].y = y2 + sin(a1) * alpha_blend
+                vertices[iv].s0 = 0
+                vertices[iv].t0 = 0
+                iv += 1
+                vertices[iv].x = x4 + cos(a2) * alpha_blend
+                vertices[iv].y = y4 + sin(a2) * alpha_blend
+                vertices[iv].s0 = 0
+                vertices[iv].t0 = 0
+                iv += 1
+                vertices[iv].x = x3 + cos(a2) * alpha_blend
+                vertices[iv].y = y3 + sin(a2) * alpha_blend
+                vertices[iv].s0 = 0
+                vertices[iv].t0 = 0
+                iv += 1
 
             # joint generation
             if i == 0 or self._joint == LINE_JOINT_NONE:
@@ -704,6 +754,18 @@ cdef class Line(VertexInstruction):
             if value <= 0:
                 raise GraphicException('Invalid width value, must be > 0')
             self._width = value
+            self.flag_update()
+
+    property alpha_blend:
+        '''Set the alpha blending width of the line, the distance on each side
+        over which the alpha is blended to 0.
+        '''
+        def __get__(self):
+            return self._alpha_blend
+        def __set__(self, value):
+            if value <= 0:
+                raise GraphicException('Invalid alpha_blend width, must be > 0')
+            self._alpha_blend = value
             self.flag_update()
 
     property cap:
