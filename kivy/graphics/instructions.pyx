@@ -301,6 +301,13 @@ cdef class VertexInstruction(Instruction):
             return self.texture_binding.texture
         def __set__(self, _tex):
             cdef Texture tex = _tex
+            # size = _tex.size
+            # print 'texture has size', _tex, size
+            # _tex.blit_buffer(''.join(map(chr, [255, 0, 255, 0])), colorfmt='rgba',
+            #                  bufferfmt='ubyte',
+            #                  #pos=(0, 0),
+            #                  pos=(size[0], size[1]),
+            #                  size=(1, 1))
             self.texture_binding.texture = tex
             if tex:
                 self.tex_coords = tex.tex_coords

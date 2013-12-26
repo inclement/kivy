@@ -438,23 +438,23 @@ cdef class Line(VertexInstruction):
             if alpha_blend > 0.0:
                 vertices[iv].x = x1 + cos(a1) * alpha_blend
                 vertices[iv].y = y1 + sin(a1) * alpha_blend
-                vertices[iv].s0 = 0
-                vertices[iv].t0 = 0
+                vertices[iv].s0 = 1
+                vertices[iv].t0 = 1
                 iv += 1
                 vertices[iv].x = x2 + cos(a1) * alpha_blend
                 vertices[iv].y = y2 + sin(a1) * alpha_blend
-                vertices[iv].s0 = 0
-                vertices[iv].t0 = 0
+                vertices[iv].s0 = 1
+                vertices[iv].t0 = 1
                 iv += 1
                 vertices[iv].x = x4 + cos(a2) * alpha_blend
                 vertices[iv].y = y4 + sin(a2) * alpha_blend
-                vertices[iv].s0 = 0
-                vertices[iv].t0 = 0
+                vertices[iv].s0 = 1
+                vertices[iv].t0 = 1
                 iv += 1
                 vertices[iv].x = x3 + cos(a2) * alpha_blend
                 vertices[iv].y = y3 + sin(a2) * alpha_blend
-                vertices[iv].s0 = 0
-                vertices[iv].t0 = 0
+                vertices[iv].s0 = 1
+                vertices[iv].t0 = 1
                 iv += 1
 
             # joint generation

@@ -17,6 +17,7 @@ Builder.load_string('''
             cap: self.cap
             width: self.linewidth
             close: self.close
+            source: '/home/asandy/colours.png'
         Color:
             rgba: .8, .8, .8, root.alpha_controlline
         Line:
