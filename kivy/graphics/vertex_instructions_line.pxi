@@ -13,6 +13,11 @@ DEF LINE_MODE_CIRCLE = 2
 DEF LINE_MODE_RECTANGLE = 3
 DEF LINE_MODE_BEZIER = 4
 
+DEF TEXTURE_MAPPING_NONE = 0
+DEF TEXTURE_MAPPING_REPEAT = 1
+DEF TEXTURE_MAPPING_POINTWISE_STRETCH = 2
+DEF TEXTURE_MAPPING_PROPORTIONAL_STRETCH = 3
+
 from kivy.graphics.stencil_instructions cimport StencilUse, StencilUnUse, StencilPush, StencilPop
 
 cdef inline int line_intersection(double x1, double y1, double x2, double y2,
@@ -105,6 +110,7 @@ cdef class Line(VertexInstruction):
     cdef int _use_stencil
     cdef int _close
     cdef int _mode
+    cdef int _texture_mapping
     cdef Instruction _stencil_rect
     cdef Instruction _stencil_push
     cdef Instruction _stencil_use
@@ -127,6 +133,7 @@ cdef class Line(VertexInstruction):
         self._joint_precision = kwargs.get('joint_precision') or 10
         self._bezier_precision = kwargs.get('bezier_precision') or 180
         self._close = int(bool(kwargs.get('close', 0)))
+        self.texture_mapping = kwargs.get('texture_mapping') or 'none'
         self._stencil_rect = None
         self._stencil_push = None
         self._stencil_use = None
@@ -266,6 +273,7 @@ cdef class Line(VertexInstruction):
         cdef int cap
         cdef char *buf = NULL
         cdef Texture texture = self.texture
+        cdef float *tc = self._tex_coords
 
         self._bxmin = 999999999
         self._bymin = 999999999
@@ -303,6 +311,62 @@ cdef class Line(VertexInstruction):
         elif cap == LINE_CAP_ROUND:
             indices_count += (self._cap_precision * 3) * 2
             vertices_count += (self._cap_precision) * 2
+
+        # Calculate texture distances for each vertex
+        cdef list tex_dists
+        cdef float seg_length
+        cdef float tc_lower_dx = tc[2] - tc[0]
+        cdef float tc_upper_dx = tc[4] - tc[6]
+        cdef float tc_left_dy = tc[7] - tc[1]
+        cdef float tc_right_dy = tc[5] - tc[3]
+        cdef float cur_dist = 0.0
+        cdef float nex_dist = 0.0
+        tex_dists = [0 for _ in range(vertices_count*2)]
+        if self._texture_mapping == 'none':
+            pass  # Already met default criteria
+        elif self._texture_mapping == 'pointwise_stretch':
+            seg_length = 1.0 / (count - 1)
+            nex_dist = seg_length
+            for i in range(0, count - 1):
+                tex_dists[iv] = cur_dist
+                tex_dists[iv+1] = nex_dist
+                tex_dists[iv+2] = nex_dist
+                tex_dists[iv+3] = cur_dist
+                iv += 4
+                cur_dist = nex_dist
+                nex_dist += seg_length
+                if self._joint == LINE_JOINT_BEVEL:
+                    tex_dists[iv] = cur_dist
+                    iv += 1
+                elif self._joint == LINE_JOINT_MITER:
+                    tex_dists[iv] = cur_dist
+                    tex_dists[iv+1] = cur_dist
+                    iv += 2
+                elif self._joint == LINE_JOINT_ROUND:
+                    tex_dists[iv] = cur_dist
+                    iv += 1
+                    for j in xrange(0, self._joint_precision - 1):
+                        tex_dists[iv] = cur_dist
+                        iv += 1
+
+            if cap == LINE_CAP_SQUARE:
+                tex_dists[iv] = 0
+                tex_dists[iv+1] = 0
+                tex_dists[iv+2] = 1
+                tex_dists[iv+3] = 1
+                iv += 4
+            elif cap == LINE_CAP_ROUND:
+                tex_dists[iv] = 0
+                iv += 1
+                for i in xrange(0, self._cap_precision - 1):
+                    tex_dists[iv] = 0
+                    iv += 1
+                tex_dists[iv] = 1
+                for i in xrange(0, self._cap_precision - 1):
+                    tex_dists[iv] = 1
+                    iv += 1
+        iv = 0
+                
 
         vertices = <vertex_t *>malloc(vertices_count * sizeof(vertex_t))
         if vertices == NULL:
@@ -692,7 +756,45 @@ cdef class Line(VertexInstruction):
             self._dash_offset = value
             self.flag_update()
 
+    property texture_mapping:
+        '''Property for setting how the texture should be mapped to the
+        line. Options are:
+
+        - 'none': Only bottom-left value of texture is used. This is the default.
+        - 'repeat': The entire texture is repeated along every step of the line.
+        - 'pointwise_stretch': The texture is stretched such that each
+          point of the line is mapped to uniformly distributed distances
+          along the texture.
+        - 'proportional_stretch': The texture is stretched proportionally
+          along the whole line, taking segment lengths into account.
+
+            '''
+        def __get__(self):
+            value = self._texture_mapping
+            if value == TEXTURE_MAPPING_NONE:
+                return 'none'
+            elif value == TEXTURE_MAPPING_REPEAT:
+                return 'repeat'
+            elif value == TEXTURE_MAPPING_POINTWISE_STRETCH:
+                return 'pointwise_stretch'
+            elif value == TEXTURE_MAPPING_PROPORTIONAL_STRETCH:
+                return 'proportional_stretch'
+        def __set__(self, value):
+            if value not in ['none', 'repeat', 'pointwise_stretch',
+                             'proportional_stretch']:
+                raise ValueError('Invalid texture mapping.')
+            if value == 'none':
+                self._texture_mapping = TEXTURE_MAPPING_NONE
+            elif value == 'repeat':
+                self._texture_mapping = TEXTURE_MAPPING_REPEAT
+            elif value == 'pointwise_stretch':
+                self._texture_mapping = TEXTURE_MAPPING_POINTWISE_STRETCH
+            elif value == 'proportional_stretch':
+                self._texture_mapping = TEXTURE_MAPPING_PROPORTIONAL_STRETCH
+            self.flag_update()
+
     property width:
+
         '''Determine the width of the line, defaults to 1.0.
 
         .. versionadded:: 1.4.1
