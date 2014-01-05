@@ -10,18 +10,19 @@ Builder.load_string('''
     texture_mapping: 'none'
     line_width: slider.value if slider else 10
     line_widget: line_wid
+    joint: 'none'
     Widget:
         id: line_wid
         canvas:
             Color:
-                rgba: 1, 0, 0, 1
+                rgba: 1, 1, 1, 1
             Line:
-                close: True
-                source: 'colours2.png'
+                source: 'colours.png'
                 width: root.line_width
                 points: root.line_points
                 texture_mapping: root.texture_mapping
                 tex_coords: [0, 0, 1, 0, 1, 1, 0, 1]
+                joint: root.joint
     BoxLayout:
         orientation: 'horizontal'
         size_hint_y: None
@@ -37,6 +38,24 @@ Builder.load_string('''
         Button:
             text: 'pointwise_stretch'
             on_press: root.texture_mapping = 'pointwise_stretch'
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: sp(40)
+        Label:
+            text: 'joint'
+        Button:
+            text: 'none'
+            on_press: root.joint = 'none'
+        Button:
+            text: 'round'
+            on_press: root.joint = 'round'
+        Button:
+            text: 'bevel'
+            on_press: root.joint = 'bevel'
+        Button:
+            text: 'miter'
+            on_press: root.joint = 'miter'
     BoxLayout:
         orientation: 'horizontal'
         size_hint_y: None
