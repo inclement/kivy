@@ -317,14 +317,36 @@ cdef class Line(VertexInstruction):
         cdef float seg_length
         cdef float tc_lower_dx = tc[2] - tc[0]
         cdef float tc_upper_dx = tc[4] - tc[6]
+        cdef float tc_lower_dy = tc[3] - tc[1]
+        cdef float tc_upper_dy = tc[5] - tc[7]
         cdef float tc_left_dy = tc[7] - tc[1]
         cdef float tc_right_dy = tc[5] - tc[3]
         cdef float cur_dist = 0.0
         cdef float nex_dist = 0.0
         tex_dists = [0 for _ in range(vertices_count*2)]
-        if self._texture_mapping == 'none':
+        if self._texture_mapping == TEXTURE_MAPPING_NONE:
             pass  # Already met default criteria
-        elif self._texture_mapping == 'pointwise_stretch':
+        elif self._texture_mapping == TEXTURE_MAPPING_REPEAT:
+            for i in range(0, count - 1):
+                tex_dists[iv] = 0
+                tex_dists[iv+1] = 1
+                tex_dists[iv+2] = 1
+                tex_dists[iv+3] = 0
+                iv += 4
+                if self._joint == LINE_JOINT_BEVEL:
+                    tex_dists[iv] = 0
+                    iv += 1
+                elif self._joint == LINE_JOINT_MITER:
+                    tex_dists[iv] = 0
+                    tex_dists[iv+1] = 0
+                    iv += 2
+                elif self._joint == LINE_JOINT_ROUND:
+                    tex_dists[iv] = 0
+                    iv += 1
+                    for j in xrange(0, self._joint_precision - 1):
+                        tex_dists[iv] = 0
+                        iv += 1
+        elif self._texture_mapping == TEXTURE_MAPPING_POINTWISE_STRETCH:
             seg_length = 1.0 / (count - 1)
             nex_dist = seg_length
             for i in range(0, count - 1):
@@ -348,7 +370,6 @@ cdef class Line(VertexInstruction):
                     for j in xrange(0, self._joint_precision - 1):
                         tex_dists[iv] = cur_dist
                         iv += 1
-
             if cap == LINE_CAP_SQUARE:
                 tex_dists[iv] = 0
                 tex_dists[iv+1] = 0
@@ -365,6 +386,8 @@ cdef class Line(VertexInstruction):
                 for i in xrange(0, self._cap_precision - 1):
                     tex_dists[iv] = 1
                     iv += 1
+        else:
+            raise Exception('invalid mapping')
         iv = 0
                 
 
@@ -454,21 +477,33 @@ cdef class Line(VertexInstruction):
             vertices[iv].y = y1
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
             iv += 1
             vertices[iv].x = x2
             vertices[iv].y = y2
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
             iv += 1
             vertices[iv].x = x3
             vertices[iv].y = y3
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[6] + tex_dists[iv] * tc_upper_dx
+                vertices[iv].t0 = tc[7] + tex_dists[iv] * tc_upper_dy
             iv += 1
             vertices[iv].x = x4
             vertices[iv].y = y4
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[6] + tex_dists[iv] * tc_upper_dx
+                vertices[iv].t0 = tc[7] + tex_dists[iv] * tc_upper_dy
             iv += 1
 
             # joint generation
@@ -498,6 +533,9 @@ cdef class Line(VertexInstruction):
                 vertices[iv].y = ay
                 vertices[iv].s0 = 0
                 vertices[iv].t0 = 0
+                if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                    vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                    vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                 if jangle < 0:
                     indices[ii] = piv2 + 1
                     indices[ii + 1] = piv
@@ -514,6 +552,9 @@ cdef class Line(VertexInstruction):
                 vertices[iv].y = ay
                 vertices[iv].s0 = 0
                 vertices[iv].t0 = 0
+                if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                    vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                    vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                 if jangle < 0:
                     if line_intersection(px1, py1, px2, py2, x1, y1, x2, y2, &ix, &iy) == 0:
                         vertices_count -= 2
@@ -523,6 +564,9 @@ cdef class Line(VertexInstruction):
                     vertices[iv + 1].y = iy
                     vertices[iv + 1].s0 = 0
                     vertices[iv + 1].t0 = 0
+                    if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                        vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                        vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                     indices[ii] = iv
                     indices[ii + 1] = iv + 1
                     indices[ii + 2] = piv2 + 1
@@ -540,6 +584,9 @@ cdef class Line(VertexInstruction):
                     vertices[iv + 1].y = iy
                     vertices[iv + 1].s0 = 0
                     vertices[iv + 1].t0 = 0
+                    if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                        vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                        vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                     indices[ii] = iv
                     indices[ii + 1] = iv + 1
                     indices[ii + 2] = piv2 + 2
@@ -573,12 +620,18 @@ cdef class Line(VertexInstruction):
                 vertices[iv].y = ay
                 vertices[iv].s0 = 0
                 vertices[iv].t0 = 0
+                if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                    vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                    vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                 iv += 1
                 for j in xrange(0, self._joint_precision - 1):
                     vertices[iv].x = ax - cos(a0 - step * j) * w
                     vertices[iv].y = ay - sin(a0 - step * j) * w
                     vertices[iv].s0 = 0
                     vertices[iv].t0 = 0
+                    if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                        vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                        vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                     if j == 0:
                         indices[ii] = siv
                         indices[ii + 1] = pivstart
@@ -604,6 +657,11 @@ cdef class Line(VertexInstruction):
             vertices[iv + 1].y = y3 + sin(angle) * w
             vertices[iv + 1].s0 = 0
             vertices[iv + 1].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
+                vertices[iv+1].s0 = tc[0] + tex_dists[iv+1] * tc_lower_dx
+                vertices[iv+1].t0 = tc[1] + tex_dists[iv+1] * tc_lower_dy
             indices[ii] = piv + 1
             indices[ii + 1] = piv + 2
             indices[ii + 2] = iv + 1
@@ -620,6 +678,11 @@ cdef class Line(VertexInstruction):
             vertices[iv + 1].y = sy4 - sin(sangle) * w
             vertices[iv + 1].s0 = 0
             vertices[iv + 1].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
+                vertices[iv+1].s0 = tc[0] + tex_dists[iv+1] * tc_lower_dx
+                vertices[iv+1].t0 = tc[1] + tex_dists[iv+1] * tc_lower_dy
             indices[ii] = 0
             indices[ii + 1] = 3
             indices[ii + 2] = iv + 1
@@ -642,12 +705,18 @@ cdef class Line(VertexInstruction):
             vertices[iv].y = cy
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
             iv += 1
             for i in xrange(0, self._cap_precision - 1):
                 vertices[iv].x = cx + cos(a1 + step * i) * w
                 vertices[iv].y = cy + sin(a1 + step * i) * w
                 vertices[iv].s0 = 0
                 vertices[iv].t0 = 0
+                if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                    vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                    vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                 if i == 0:
                     indices[ii] = siv
                     indices[ii + 1] = 0
@@ -674,12 +743,18 @@ cdef class Line(VertexInstruction):
             vertices[iv].y = cy
             vertices[iv].s0 = 0
             vertices[iv].t0 = 0
+            if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
             iv += 1
             for i in xrange(0, self._cap_precision - 1):
                 vertices[iv].x = cx + cos(a1 + step * i) * w
                 vertices[iv].y = cy + sin(a1 + step * i) * w
                 vertices[iv].s0 = 0
                 vertices[iv].t0 = 0
+                if self._texture_mapping != TEXTURE_MAPPING_NONE:
+                    vertices[iv].s0 = tc[0] + tex_dists[iv] * tc_lower_dx
+                    vertices[iv].t0 = tc[1] + tex_dists[iv] * tc_lower_dy
                 if i == 0:
                     indices[ii] = siv
                     indices[ii + 1] = piv + 1
@@ -780,17 +855,14 @@ cdef class Line(VertexInstruction):
             elif value == TEXTURE_MAPPING_PROPORTIONAL_STRETCH:
                 return 'proportional_stretch'
         def __set__(self, value):
-            if value not in ['none', 'repeat', 'pointwise_stretch',
-                             'proportional_stretch']:
-                raise ValueError('Invalid texture mapping.')
-            if value == 'none':
-                self._texture_mapping = TEXTURE_MAPPING_NONE
-            elif value == 'repeat':
+            if value == 'repeat':
                 self._texture_mapping = TEXTURE_MAPPING_REPEAT
             elif value == 'pointwise_stretch':
                 self._texture_mapping = TEXTURE_MAPPING_POINTWISE_STRETCH
             elif value == 'proportional_stretch':
                 self._texture_mapping = TEXTURE_MAPPING_PROPORTIONAL_STRETCH
+            else:
+                self._texture_mapping = TEXTURE_MAPPING_NONE
             self.flag_update()
 
     property width:
