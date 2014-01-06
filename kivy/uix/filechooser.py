@@ -34,6 +34,8 @@ __all__ = ('FileChooserListView', 'FileChooserIconView',
 
 from weakref import ref
 from time import time
+from kivy.compat import string_types
+from kivy.factory import Factory
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.logger import Logger
@@ -234,15 +236,16 @@ class FileChooserController(FloatLayout):
     #. Callbacks
 
         You can specify a function that will be called for each file. The
-        callback will be passed the folder and file name as the first and second
-        parameters respectively. It should return True to indicate a match and
-        False otherwise.
+        callback will be passed the folder and file name as the first
+        and second parameters respectively. It should return True to
+        indicate a match and False otherwise.
 
     .. versionchanged:: 1.4.0
         If the filter is a callable (function or method), it will be called
         with the path and the file name as arguments for each file in the
         directory.
-        The callable should returns True to indicate a match and False overwise.
+        The callable should returns True to indicate a match and False
+        overwise.
     '''
 
     filter_dirs = BooleanProperty(False)
@@ -260,8 +263,8 @@ class FileChooserController(FloatLayout):
 
     .. versionchanged:: 1.8.0
 
-        The signature needs now 2 arguments: first the list of files, second the
-        filesystem class to use.
+        The signature needs now 2 arguments: first the list of files,
+        second the filesystem class to use.
     '''
 
     files = ListProperty([])
@@ -310,12 +313,19 @@ class FileChooserController(FloatLayout):
     '''
 
     progress_cls = ObjectProperty(FileChooserProgress)
-    '''Class to use for displaying a progress indicator for filechooser loading.
+    '''Class to use for displaying a progress indicator for filechooser
+    loading.
 
     .. versionadded:: 1.2.0
 
     :class:`~kivy.properties.ObjectProperty`, defaults to
     :class:`FileChooserProgress`.
+
+    .. versionchanged:: 1.8.0
+
+        If you set a string, the :class:`~kivy.factory.Factory` will be used to
+        resolve the class.
+
     '''
 
     file_encodings = ListProperty(['utf-8', 'latin1', 'cp1252'])
@@ -333,7 +343,7 @@ class FileChooserController(FloatLayout):
     '''
 
     file_system = ObjectProperty(FileSystemLocal(),
-            baseclass=FileSystemAbstract)
+                                 baseclass=FileSystemAbstract)
     '''Implementation to access the file system. Must be an instance of
     FileSystemAbstract.
 
@@ -344,7 +354,7 @@ class FileChooserController(FloatLayout):
     '''
 
     __events__ = ('on_entry_added', 'on_entries_cleared',
-            'on_subentry_to_entry', 'on_remove_subentry', 'on_submit')
+                  'on_subentry_to_entry', 'on_remove_subentry', 'on_submit')
 
     def __init__(self, **kwargs):
         self._progress = None
@@ -576,7 +586,10 @@ class FileChooserController(FloatLayout):
     def _show_progress(self):
         if self._progress:
             return
-        self._progress = self.progress_cls(path=self.path)
+        cls = self.progress_cls
+        if isinstance(cls, string_types):
+            cls = Factory.get(cls)
+        self._progress = cls(path=self.path)
         self._progress.value = 0
         self.add_widget(self._progress)
 

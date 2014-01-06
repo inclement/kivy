@@ -160,6 +160,8 @@ __all__ = ('Settings', 'SettingsPanel', 'SettingItem', 'SettingString',
 
 import json
 import os
+from kivy.compat import string_types
+from kivy.factory import Factory
 from kivy.metrics import dp
 from kivy.config import ConfigParser
 from kivy.animation import Animation
@@ -178,7 +180,7 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.widget import Widget
 from kivy.properties import ObjectProperty, StringProperty, ListProperty, \
-        BooleanProperty, NumericProperty, DictProperty
+    BooleanProperty, NumericProperty, DictProperty
 
 
 class SettingSpacer(Widget):
@@ -379,12 +381,14 @@ class SettingString(SettingItem):
     def _create_popup(self, instance):
         # create popup layout
         content = BoxLayout(orientation='vertical', spacing='5dp')
-        self.popup = popup = Popup(title=self.title,
-            content=content, size_hint=(None, None), size=('400dp', '250dp'))
+        self.popup = popup = Popup(
+            title=self.title, content=content, size_hint=(None, None),
+            size=('400dp', '250dp'))
 
         # create the textinput used for numeric input
-        self.textinput = textinput = TextInput(text=self.value,
-            font_size='24sp', multiline=False, size_hint_y=None, height='42sp')
+        self.textinput = textinput = TextInput(
+            text=self.value, font_size='24sp', multiline=False,
+            size_hint_y=None, height='42sp')
         textinput.bind(on_text_validate=self._validate)
         self.textinput = textinput
 
@@ -458,12 +462,13 @@ class SettingPath(SettingItem):
         # create popup layout
         content = BoxLayout(orientation='vertical', spacing=5)
         popup_width = min(0.95 * Window.width, dp(500))
-        self.popup = popup = Popup(title=self.title,
-            content=content, size_hint=(None, 0.9), width=popup_width)
+        self.popup = popup = Popup(
+            title=self.title, content=content, size_hint=(None, 0.9),
+            width=popup_width)
 
         # create the filechooser
         self.textinput = textinput = FileChooserListView(
-                path=self.value, size_hint=(1, 1), dirselect=True)
+            path=self.value, size_hint=(1, 1), dirselect=True)
         textinput.bind(on_path=self._validate)
         self.textinput = textinput
 
@@ -541,8 +546,9 @@ class SettingOptions(SettingItem):
     def _create_popup(self, instance):
         # create the popup
         content = BoxLayout(orientation='vertical', spacing='5dp')
-        self.popup = popup = Popup(content=content,
-            title=self.title, size_hint=(None, None), size=('400dp', '400dp'))
+        self.popup = popup = Popup(
+            content=content, title=self.title, size_hint=(None, None),
+            size=('400dp', '400dp'))
         popup.height = len(self.options) * dp(55) + dp(150)
 
         # add all the options
@@ -867,6 +873,11 @@ class Settings(BoxLayout):
     :class:`~kivy.properties.ObjectProperty` and defaults to
     :class`InterfaceWithSidebar`.
 
+    .. versionchanged:: 1.8.0
+
+        If you set a string, the :class:`~kivy.factory.Factory` will be used to
+        resolve the class.
+
     '''
 
     __events__ = ('on_close', 'on_config_change')
@@ -901,7 +912,10 @@ class Settings(BoxLayout):
         created, they will be added to this interface which will display them
         to the user.
         '''
-        interface = self.interface_cls()
+        cls = self.interface_cls
+        if isinstance(cls, string_types):
+            cls = Factory.get(cls)
+        interface = cls()
         self.interface = interface
         self.add_widget(interface)
         self.interface.bind(on_close=lambda j: self.dispatch('on_close'))
@@ -946,8 +960,9 @@ class Settings(BoxLayout):
             ttype = setting['type']
             cls = self._types.get(ttype)
             if cls is None:
-                raise ValueError('No class registered to handle the <%s> type' %
-                                 setting['type'])
+                raise ValueError(
+                    'No class registered to handle the <%s> type' %
+                    setting['type'])
 
             # create a instance of the class, without the type attribute
             del setting['type']
@@ -975,7 +990,7 @@ class Settings(BoxLayout):
         from kivy.config import Config
         from os.path import join
         self.add_json_panel('Kivy', Config,
-                join(kivy_data_dir, 'settings_kivy.json'))
+                            join(kivy_data_dir, 'settings_kivy.json'))
 
 
 class SettingsWithSidebar(Settings):
@@ -1042,8 +1057,8 @@ class InterfaceWithNoMenu(ContentPanel):
     '''
     def add_widget(self, widget):
         if self.container is not None and len(self.container.children) > 0:
-            raise Exception('ContentNoMenu cannot accept more than one settings'
-            'panel')
+            raise Exception(
+                'ContentNoMenu cannot accept more than one settings panel')
         super(InterfaceWithNoMenu, self).add_widget(widget)
 
 
@@ -1195,4 +1210,3 @@ if __name__ == '__main__':
             return s
 
     SettingsApp().run()
-

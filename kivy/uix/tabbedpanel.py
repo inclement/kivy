@@ -122,13 +122,14 @@ tabbed panel's background_image and background_color.
 '''
 
 __all__ = ('StripLayout', 'TabbedPanel', 'TabbedPanelContent',
-           'TabbedPanelHeader','TabbedPanelItem', 'TabbedPanelStrip',
+           'TabbedPanelHeader', 'TabbedPanelItem', 'TabbedPanelStrip',
            'TabbedPanelException')
 
 from functools import partial
 from kivy.clock import Clock
+from kivy.compat import string_types
+from kivy.factory import Factory
 from kivy.uix.togglebutton import ToggleButton
-from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.uix.scatter import Scatter
 from kivy.uix.scrollview import ScrollView
@@ -246,7 +247,7 @@ class StripLayout(GridLayout):
     '''
 
     background_image = StringProperty(
-                            'atlas://data/images/defaulttheme/action_view')
+        'atlas://data/images/defaulttheme/action_view')
     '''Background image to be used for the Strip layout of the TabbedPanel.
 
     :data:`background_image` is a :class:`~kivy.properties.StringProperty` and
@@ -291,7 +292,7 @@ class TabbedPanel(GridLayout):
     '''
 
     background_disabled_image = StringProperty(
-                            'atlas://data/images/defaulttheme/tab_disabled')
+        'atlas://data/images/defaulttheme/tab_disabled')
     '''Background image of the main shared content object when disabled.
 
     .. versionadded:: 1.8.0
@@ -302,13 +303,13 @@ class TabbedPanel(GridLayout):
     '''
 
     strip_image = StringProperty(
-                                'atlas://data/images/defaulttheme/action_view')
+        'atlas://data/images/defaulttheme/action_view')
     '''Background image of the tabbed strip.
 
     .. versionadded:: 1.8.0
 
-    :data:`strip_image` is a :class:`~kivy.properties.StringProperty` and defaults
-    to a empty image.
+    :data:`strip_image` is a :class:`~kivy.properties.StringProperty`
+    and defaults to a empty image.
     '''
 
     strip_border = ListProperty([4, 4, 4, 4])
@@ -316,8 +317,8 @@ class TabbedPanel(GridLayout):
 
     .. versionadded:: 1.8.0
 
-    :data:`strip_border` is a :class:`~kivy.properties.ListProperty` and defaults
-    to [4, 4, 4, 4].
+    :data:`strip_border` is a :class:`~kivy.properties.ListProperty` and
+    defaults to [4, 4, 4, 4].
     '''
 
     _current_tab = ObjectProperty(None)
@@ -386,7 +387,12 @@ class TabbedPanel(GridLayout):
         `default_tab_cls` should be subclassed from `TabbedPanelHeader`
 
     :data:`default_tab_cls` is an :class:`~kivy.properties.ObjectProperty`
-    and defaults to `TabbedPanelHeader`.
+    and defaults to `TabbedPanelHeader`. If you set a string, the
+    :class:`~kivy.factory.Factory` will be used to resolve the class.
+
+    .. versionchanged:: 1.8.0
+
+        Factory will resolve the class if a string is set.
     '''
 
     def get_tab_list(self):
@@ -419,7 +425,7 @@ class TabbedPanel(GridLayout):
         if not issubclass(new_tab.__class__, TabbedPanelHeader):
             raise TabbedPanelException('`default_tab_class` should be\
                 subclassed from `TabbedPanelHeader`')
-        if  self._default_tab == new_tab:
+        if self._default_tab == new_tab:
             return
         oltab = self._default_tab
         self._default_tab = new_tab
@@ -598,6 +604,9 @@ class TabbedPanel(GridLayout):
         _tabs = self._tab_strip
         cls = self.default_tab_cls
 
+        if isinstance(cls, string_types):
+            cls = Factory.get(cls)
+
         if not issubclass(cls, TabbedPanelHeader):
             raise TabbedPanelException('`default_tab_class` should be\
                 subclassed from `TabbedPanelHeader`')
@@ -683,8 +692,8 @@ class TabbedPanel(GridLayout):
             tab_layout.rows = 1
             tab_layout.cols = 3
             tab_layout.size_hint = (1, None)
-            tab_layout.height = tab_height + tab_layout.padding[1] +\
-                                tab_layout.padding[3] + dp(2)
+            tab_layout.height = (tab_height + tab_layout.padding[1] +
+                                 tab_layout.padding[3] + dp(2))
             self_update_scrollview(scrl_v)
 
             if pos_letter == 'b':

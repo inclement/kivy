@@ -40,8 +40,8 @@ The current implementation divides the :class:`AccordionItem` into two parts:
 #. One container for the title bar
 #. One container for the content
 
-The title bar is made from a Kv template. We'll see how to create a new template
-to customize the design of the title bar.
+The title bar is made from a Kv template. We'll see how to create a new
+template to customize the design of the title bar.
 
 .. warning::
 
@@ -73,8 +73,8 @@ Or change the orientation to vertical::
 
     root = Accordion(orientation='vertical')
 
-The AccordionItem is more configurable and you can set your own title background
-when the item is collapsed or opened::
+The AccordionItem is more configurable and you can set your own title
+background when the item is collapsed or opened::
 
     item = AccordionItem(background_normal='image_when_collapsed.png',
         background_selected='image_when_selected.png')
@@ -102,7 +102,8 @@ class AccordionException(Exception):
 
 class AccordionItem(FloatLayout):
     '''AccordionItem class that must be used in conjunction with the
-    :class:`Accordion` class. See the module documentation for more information.
+    :class:`Accordion` class. See the module documentation for more
+    information.
     '''
 
     title = StringProperty('')
@@ -167,8 +168,8 @@ class AccordionItem(FloatLayout):
     collapse = BooleanProperty(True)
     '''Boolean to indicate if the current item is collapsed or not.
 
-    :data:`collapse` is a :class:`~kivy.properties.BooleanProperty` and defaults
-    to True.
+    :data:`collapse` is a :class:`~kivy.properties.BooleanProperty` and
+    defaults to True.
     '''
 
     collapse_alpha = NumericProperty(1.)
@@ -377,9 +378,7 @@ class Accordion(Widget):
             raise AccordionException(
                 'Accordion: instance not found in children')
         for widget in self.children:
-            if widget == instance:
-                continue
-            widget.collapse = True
+            widget.collapse = widget is not instance
         self._trigger_layout()
 
     def _do_layout(self, dt):
@@ -457,6 +456,12 @@ if __name__ == '__main__':
     btn = Button(text='Toggle layout')
     btn.bind(on_release=toggle_layout)
 
+    def select_2nd_item(*l):
+        print 'select second item'
+        acc.select(acc.children[-2])
+    btn2 = Button(text='Select 2nd item')
+    btn2.bind(on_release=select_2nd_item)
+
     from kivy.uix.slider import Slider
     slider = Slider()
 
@@ -468,6 +473,7 @@ if __name__ == '__main__':
     root = BoxLayout(spacing=20, padding=20)
     controls = BoxLayout(orientation='vertical', size_hint_x=.3)
     controls.add_widget(btn)
+    controls.add_widget(btn2)
     controls.add_widget(slider)
     root.add_widget(controls)
     root.add_widget(acc)
