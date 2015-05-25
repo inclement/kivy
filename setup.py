@@ -80,6 +80,8 @@ if sys.platform == 'darwin':
 ndkplatform = environ.get('NDKPLATFORM')
 if ndkplatform is not None and environ.get('LIBLINK'):
     platform = 'android'
+if environ.get('ITBEANDROID', None) is not None:
+    platform = 'android-sdl2'
 kivy_ios_root = environ.get('KIVYIOSROOT', None)
 if kivy_ios_root is not None:
     platform = 'ios'
@@ -161,7 +163,7 @@ cython_unsupported = '''\
            cython_unsupported_append)
 
 have_cython = False
-if platform in ('ios', 'android'):
+if platform in ('ios', 'android', 'android-sdl2'):
     print('\nCython check avoided.')
 else:
     try:
@@ -294,7 +296,7 @@ except ImportError:
     print('User distribution detected, avoid portable command.')
 
 # Detect which opengl version headers to use
-if platform in ('android', 'darwin', 'ios', 'rpi'):
+if platform in ('android', 'darwin', 'ios', 'rpi', 'android-sdl2'):
     c_options['use_opengl_es2'] = True
 elif platform == 'win32':
     print('Windows platform detected, force GLEW usage.')
@@ -335,9 +337,12 @@ if platform == 'ios':
     c_options['use_ios'] = True
     c_options['use_sdl2'] = True
 
+if platform == 'android-sdl2':
+    c_options['use_sdl2'] = True
+    
 # detect gstreamer, only on desktop
 # works if we forced the options or in autodetection
-if platform not in ('ios', 'android') and (c_options['use_gstreamer']
+if platform not in ('ios', 'android', 'android-sdl2') and (c_options['use_gstreamer']
                                            in (None, True)):
     if c_options['use_osx_frameworks'] and platform == 'darwin':
         # check the existence of frameworks
@@ -361,7 +366,7 @@ if platform not in ('ios', 'android') and (c_options['use_gstreamer']
             c_options['use_gstreamer'] = True
 
 
-# detect SDL2, only on desktop and iOS
+# detect SDL2, only on desktop and iOS and android-sdl2
 # works if we forced the options or in autodetection
 sdl2_flags = {}
 if platform not in ('android',) and c_options['use_sdl2'] in (None, True):
@@ -497,7 +502,7 @@ def determine_gl_flags():
         flags['include_dirs'] = ['/usr/X11R6/include']
         flags['extra_link_args'] = ['-L', '/usr/X11R6/lib']
         flags['libraries'] = ['GL']
-    elif platform == 'android':
+    elif platform in ('android', 'android-sdl2'):
         flags['include_dirs'] = [join(ndkplatform, 'usr', 'include')]
         flags['extra_link_args'] = ['-L', join(ndkplatform, 'usr', 'lib')]
         flags['libraries'] = ['GLESv2']
