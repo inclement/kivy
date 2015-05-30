@@ -1020,9 +1020,9 @@ class App(EventDispatcher):
         setting_key = 282  # F1
 
         # android hack, if settings key is pygame K_MENU
-        if platform == 'android':
-            import pygame
-            setting_key = pygame.K_MENU
+        # if platform == 'android':
+        #     import pygame
+        #     setting_key = pygame.K_MENU
 
         if key == setting_key:
             # toggle settings panel

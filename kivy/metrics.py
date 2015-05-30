@@ -158,6 +158,7 @@ class MetricsBase(object):
             return float(custom_dpi)
 
         if platform == 'android':
+            return 96.0
             import android
             return android.get_dpi()
         elif platform == 'ios':
@@ -217,6 +218,7 @@ class MetricsBase(object):
             return float(custom_fontscale)
 
         if platform == 'android':
+            return 1.0
             from jnius import autoclass
             PythonActivity = autoclass('org.renpy.android.PythonActivity')
             config = PythonActivity.mActivity.getResources().getConfiguration()
