@@ -454,6 +454,7 @@ class WindowBase(EventDispatcher):
         return 0
 
     def _get_android_kheight(self):
+        return 0
         global android
         if not android:
             import android
