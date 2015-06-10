@@ -194,7 +194,7 @@ class MetricsBase(object):
             return float(custom_density)
 
         if platform == 'android':
-            return 96
+            return 1.
             import jnius
             Hardware = jnius.autoclass('org.renpy.android.Hardware')
             return Hardware.metrics.scaledDensity
