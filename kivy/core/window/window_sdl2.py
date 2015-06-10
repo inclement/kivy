@@ -309,7 +309,8 @@ class WindowSDL(WindowBase):
                 # We have a conflict of using either the mouse or the finger.
                 # Right now, we have no mechanism that we could use to know
                 # which is the preferred one for the application.
-                if platform == "ios":
+                from kivy.setupconfig import USE_SDL2
+                if platform == "ios" or (platform == 'android' and USE_SDL2):
                     SDL2MotionEventProvider.q.appendleft(event)
                 pass
 
