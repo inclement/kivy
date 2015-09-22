@@ -393,7 +393,7 @@ class WindowSDL(WindowBase):
                 # We have a conflict of using either the mouse or the finger.
                 # Right now, we have no mechanism that we could use to know
                 # which is the preferred one for the application.
-                if platform == "ios":
+                if platform in ('ios', 'android'):
                     SDL2MotionEventProvider.q.appendleft(event)
                 pass
 
@@ -508,7 +508,7 @@ class WindowSDL(WindowBase):
                     SDLK_KP_5: 261, SDLK_KP_6: 262, SDLK_KP_7: 263,
                     SDLK_KP_8: 264, SDLK_KP_9: 265}
 
-                if platform == 'ios':
+                if platform in 'ios':
                     # XXX ios keyboard suck, when backspace is hit, the delete
                     # keycode is sent. fix it.
                     key_swap[127] = 8  # back

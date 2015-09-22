@@ -29,6 +29,7 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.setupconfig import USE_SDL2
 from kivy.graphics.transformation import Matrix
 
+
 # late import
 VKeyboard = None
 android = None
@@ -497,6 +498,8 @@ class WindowBase(EventDispatcher):
         return 0
 
     def _get_android_kheight(self):
+        if USE_SDL2:  # Placeholder until the SDL2 bootstrap supports this
+            return 0
         global android
         if not android:
             import android
